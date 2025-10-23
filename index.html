@@ -1,801 +1,213 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>move on.</title>
   <meta name="description" content="Before you do it, read this, please?">
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <link rel="icon" href="help.png" type="image/png">
+  <link rel="icon" type="image/png" href="itsok.png">
   <style>
-    :root{
-      --bg-angle: 180deg;
-      --g0: #071029;
-      --g1: #2b3340;
-      --g2: #3b1f3a;
-      --g3: #4b1e3b;
-      --g4: #6b3750;
-      --g5: #b77a53;
-      --g6: #ffb88c;
-      --text-color: rgba(255,255,255,0.96);
-      --muted: rgba(255,255,255,0.6);
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Segoe UI', Roboto, sans-serif;
+      color: white;
+      background: linear-gradient(180deg, #0a0a1a, #1a1a2e);
+      transition: background 5s ease;
     }
 
-    html,body{
-      height:100%;
-      margin:0;
-      font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-      background: linear-gradient(var(--bg-angle), var(--g0), var(--g1));
-      overflow:hidden;
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
+    #container {
+      position: relative;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
     }
 
-    /* Canvas for particles covers whole viewport */
-    #particle-canvas{
-      position:fixed;
-      inset:0;
-      z-index:1;
-      pointer-events:none;
+    #text {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      text-align: center;
+      font-size: 1.3rem;
+      line-height: 1.8rem;
+      opacity: 0;
+      animation: fadeIn 2s ease forwards;
     }
 
-    /* Main stage */
-    .stage{
-      position:relative;
-      width:100%;
-      height:100vh;
-      display:flex;
-      align-items:flex-end;
-      justify-content:center;
-      z-index:2;
-      overflow:hidden;
+    #playButton {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(255, 255, 255, 0.15);
+      border: 2px solid white;
+      border-radius: 50%;
+      width: 80px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.4s ease;
     }
 
-    /* play button (centered initially) */
-    .play-wrap{
-      position:fixed;
-      left:50%;
-      top:50%;
-      transform:translate(-50%,-50%);
-      z-index:10;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      width:120px;
-      height:120px;
-      background: rgba(255,255,255,0.06);
-      border-radius:999px;
-      backdrop-filter: blur(6px);
-      cursor:pointer;
-      transition:opacity .6s ease, transform .45s cubic-bezier(.2,.9,.2,1);
-      box-shadow: 0 8px 30px rgba(5,5,15,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
-      border: 1px solid rgba(255,255,255,0.06);
-    }
-    .play-wrap.hidden{
-      opacity:0;
-      transform:translate(-50%,-50%) scale(.9);
-      pointer-events:none;
-    }
-    .play{
-      width:48px;
-      height:48px;
-      display:block;
-      margin-left:6px;
-      clip-path: polygon(0 0, 100% 50%, 0 100%);
-      background: linear-gradient(180deg, #fff 0%, #e8e8e8 100%);
-      filter: drop-shadow(0 6px 12px rgba(0,0,0,0.4));
-    }
-    .play:after{
-      content:'';
-      position:absolute;
-    }
-    .play-label{
-      position:absolute;
-      bottom:-48px;
-      color:var(--muted);
-      font-size:13px;
-      letter-spacing:.08em;
-      text-transform:uppercase;
+    #playButton:hover {
+      background: rgba(255, 255, 255, 0.25);
     }
 
-    /* content container - text scrolls inside here */
-    .content-wrap{
-      position:relative;
-      width:86%;
-      max-width:900px;
-      height:78vh;
-      margin-bottom:8vh;
-      display:block;
-      overflow:hidden;
-      z-index:3;
-      pointer-events:auto;
+    #playButton::before {
+      content: '';
+      width: 0;
+      height: 0;
+      border-left: 18px solid white;
+      border-top: 10px solid transparent;
+      border-bottom: 10px solid transparent;
     }
 
-    .text-track{
-      position:absolute;
-      left:0;
-      right:0;
-      bottom:-10vh; /* start below viewport */
-      transform: translateY(0);
-      will-change: transform;
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
     }
 
-    .text{
-      font-size: clamp(18px, 1.4vw, 20px);
-      line-height:1.7;
-      color:var(--text-color);
-      text-shadow: 0 6px 24px rgba(8,6,12,0.5);
-      padding: 2rem 1.1rem;
-    }
-
-    .text p{
-      margin: 1.05rem 0;
-      opacity:0;
-      transform: translateY(10px);
-      transition: opacity .9s ease, transform .9s ease;
-      will-change: opacity, transform;
-      font-weight: 400;
-    }
-
-    .text p.visible{
-      opacity:1;
-      transform: translateY(0);
-    }
-
-    .text p b{
-      font-weight:700;
-    }
-
-    /* final line pause styles */
-    #final-line{
-      display:block;
-      text-align:center;
-      font-size: clamp(22px, 2.4vw, 28px);
-      margin-top: 2.4rem;
-      margin-bottom: 8rem;
-      transition: transform .9s ease, text-shadow .8s ease;
-    }
-    #final-line.paused{
-      transform: scale(1.02);
-      text-shadow: 0 12px 40px rgba(255,200,170,0.25), 0 2px 6px rgba(0,0,0,0.4);
-      color: #fff;
-    }
-
-    /* subtle "glow" backdrop on pause */
-    .pause-glow{
-      position:fixed;
-      inset:0;
-      z-index:4;
-      pointer-events:none;
-      opacity:0;
-      transition: opacity .6s ease;
-      background: radial-gradient(800px 400px at 50% 60%, rgba(255,180,120,0.06), transparent 15%);
-    }
-    .pause-glow.on{ opacity:1; }
-
-    /* responsive tweaks */
-    @media (max-width:640px){
-      .play-wrap{ width:88px;height:88px; }
-      .play{ width:36px;height:36px; margin-left:5px; }
-      .content-wrap{ width:94%; height:75vh; margin-bottom:6vh; }
+    @keyframes fadeIn {
+      to { opacity: 1; }
     }
   </style>
 </head>
 <body>
-  <canvas id="particle-canvas"></canvas>
-
-  <div class="stage" aria-hidden="false">
-    <div class="content-wrap" id="contentWrap" aria-live="polite">
-      <div class="text-track" id="textTrack">
-        <div class="text" id="textContent">
-          <!-- Inserted by JS to preserve newlines and final id -->
-        </div>
-      </div>
+  <div id="container">
+    <canvas id="particles"></canvas>
+    <div id="text">
+      <!-- Full emotional text content -->
+      So, you’re here. <br>
+      Well… if you found this, you’re probably stuck in a loop. <br>
+      ...
+      <b>im right here</b>
     </div>
+    <div id="playButton"></div>
   </div>
 
-  <!-- pause glow -->
-  <div class="pause-glow" id="pauseGlow"></div>
-
-  <!-- play button -->
-  <button class="play-wrap" id="playButton" aria-label="Play music and start">
-    <span class="play" aria-hidden="true"></span>
-    <span class="play-label">Play</span>
-  </button>
-
-  <!-- audio -->
-  <audio id="bgAudio" src="music.mp3" crossorigin="anonymous" preload="auto"></audio>
+  <audio id="bgMusic" src="music.mp3" preload="auto"></audio>
 
   <script>
-    /*******************************
-     * Text content — from user
-     *******************************/
-    const rawHTML = `So, you’re here. <br>
- Well… if you found this, you’re probably stuck in a loop. <br>
- You know, that weird space where you can’t move on, but you can’t go back either. <br>
- You keep replaying things in your head, wondering what went wrong, what you could’ve done different. <br>
- It’s exhausting, isn’t it? <br>
-You need to move on, but you don’t know how. <br>
- And that’s okay. <br>
- Nobody really teaches you how to let go of something that once felt like everything. <br>
- Btw, killing yourself solves nothing, so just—don’t even go there. <br>
- I know it feels heavy, like everything’s falling apart, but that’s not the answer. <br>
- You’re not broken beyond repair. <br>
- Just breathe for a second, okay? <br>
-You’ve gotta move on… right? <br>
- Yeah, I know. Easier said than done. <br>
- You can’t just wake up and be fine. <br>
- It doesn’t work like that. <br>
- You keep checking your phone, hoping maybe they’ll reach out. <br>
- You see something that reminds you of them and it all floods back. <br>
- It’s brutal. <br>
- But you’re still here, and that means something. <br>
-I know you can’t move on yet, but it’s alright. <br>
- It’s hard. <br>
- I mean, what else are you supposed to do? <br>
- The thought of someone new feels wrong, almost scary. <br>
- Like you’d be betraying what you had. <br>
- And yeah, maybe they really felt like the one. <br>
- You thought it was forever, right? <br>
- But somewhere deep down, you knew it would end eventually. <br>
- You just didn’t want to believe it. <br>
-Stop blaming yourself. <br>
- You didn’t ruin everything. <br>
- Sometimes things fall apart even when you give them your all. <br>
- Sometimes it’s not about what you did or didn’t do. <br>
- Sometimes, it’s just life. <br>
-You know they cared, right? <br>
- They really did. <br>
- But maybe it wasn’t meant to last forever. <br>
- Maybe it was meant to teach you something, even if that lesson hurts right now. <br>
- And what if it wasn’t either of your faults? <br>
- What if it was just… timing? <br>
- Or something out of your control? <br>
- You need to understand—it had to end for a reason. <br>
- Even if you don’t see that reason yet. <br>
-One day, you’ll wake up and the weight will feel lighter. <br>
- You’ll catch yourself laughing again, for real. <br>
- You’ll stop checking if they’ve seen your stories. <br>
- You’ll stop comparing everyone to them. <br>
- And when that day comes, it won’t mean you forgot. <br>
- It’ll just mean you healed. <br>
-Until then, take it slow. <br>
- Eat something, even if it’s small. <br>
- Go outside, even if it’s just to breathe for a minute. <br>
- Let the world remind you that there’s more waiting out there. <br>
- Because there is. <br>
- There’s more love. More joy. More peace. <br>
- You just have to hang on long enough to find it. <br>
-So yeah… maybe it ended. <br>
- But you? <br>
- You’re still here. <br>
- And that means there’s still time to start again. <br>
-Yeah… <br>
- I loved them. <br>
- I really did. <br>
- And I thought they loved me too. <br>
- You know that feeling — when everything just clicks, and you start building your whole world around someone? <br>
- You start planning futures in your head, making promises you thought you’d actually keep. <br>
- You start believing that maybe, just maybe, you finally found peace. <br>
-But then it’s gone. <br>
- Not even all at once — just piece by piece. <br>
- Slowly, like sand slipping through your fingers. <br>
- You try to hold on tighter, but the tighter you grip, the faster it fades. <br>
- And suddenly, you’re left there staring at the ceiling at 2 a.m., wondering what the hell happened. <br>
-It hurts because it was real. <br>
- Don’t let anyone tell you it wasn’t. <br>
- What you felt was real. What you gave was real. <br>
- Even if it didn’t last forever, it mattered. <br>
- And that’s what makes it so hard to let go — because it wasn’t fake, it just… ended. <br>
-You replay their laugh, their voice, the small things they did without even realizing how much they meant to you. <br>
- The way they looked at you when you weren’t even trying. <br>
- The inside jokes no one else would get. <br>
- That one memory that hits you so hard it physically hurts to think about. <br>
- Yeah. That one. <br>
-And the worst part? <br>
- They probably think you’re okay. <br>
- They probably don’t even know how much you miss them. <br>
- How much space they still take up in your head. <br>
- You tell yourself you’re fine, that you’re healing, but deep down you still check for them in every crowd, every dream, every silence. <br>
-I get it. <br>
- It’s not easy to accept that something so right could end so wrong. <br>
- It’s not easy to stop loving someone who once made you feel alive. <br>
- But you have to. <br>
- Not because you stopped caring — but because you finally started caring about yourself again. <br>
-You deserve peace. <br>
- You deserve someone who doesn’t make you question your worth. <br>
- You deserve someone who stays. <br>
- But before all that, you deserve you. <br>
-You’ve spent so long giving pieces of yourself away just to feel wanted. <br>
- It’s time to start giving them back to yourself. <br>
- Piece by piece. Day by day. <br>
-It won’t happen overnight. <br>
- Some days you’ll feel fine, and then out of nowhere you’ll fall apart again. <br>
- That’s okay. That’s healing. <br>
- It’s not linear, it’s messy and unfair, but it’s real. <br>
-And maybe one day, you’ll look back and realize it all led you somewhere better. <br>
- Maybe not “better” in the perfect sense, but in the way that feels lighter, freer. <br>
- Because you’ll know that no matter what happened, you made it through. <br>
-You loved deeply. <br>
- You gave honestly. <br>
- You cared with everything you had. <br>
- And even if it didn’t last — that doesn’t make you weak. <br>
- It makes you human. <br>
-So yeah… you loved them. <br>
- And they probably loved you too, in their own way. <br>
- But sometimes love isn’t enough to make people stay. <br>
- And that’s the hardest truth to live with. <br>
-Still — you’re here. <br>
- You’re breathing. <br>
- You’re trying. <br>
- And that means there’s still hope. <br>
-You know what? Healing doesn’t look like sunlight and smiles right away. <br>
- It starts small — like eating something even though you don’t feel like it. <br>
- Like taking a shower, or opening the window just to feel fresh air for a second. <br>
- It’s not dramatic; it’s quiet, it’s gentle, it’s you trying. <br>
-You don’t have to be happy to keep going. <br>
- You just have to stay curious. <br>
- Like — what if things can change? What if there’s more than this pain? <br>
- That little “what if” is hope. <br>
- It’s fragile, but it’s powerful. <br>
-There will be mornings where it still hurts. <br>
- You’ll wake up and the ache will still be there, and that’s okay. <br>
- It doesn’t mean you’ve failed. It just means you’re still healing. <br>
-Then one day, it hits softer. <br>
- You’ll hear a song that used to make you cry, and instead of breaking, you’ll just… breathe. <br>
- You’ll look around and realize that you didn’t think about them for a few hours. <br>
- That’s progress. That’s something. <br>
-The world slowly starts to rebuild around you. <br>
- Not like it was before — it’s different, quieter maybe, but real. <br>
- You find comfort in little things again. The way coffee smells. The sound of rain. A random laugh that surprises you. <br>
- That’s life trying to remind you — you’re still part of it. <br>
-And when you finally start to see it, when you realize you can exist without constant pain — 
- you’ll feel proud. <br>
- Because you’ll know how far you’ve come. <br>
- You didn’t give up when it would’ve been easier to. <br>
- You stayed. <br>
-And staying? That’s strength. <br>
- Not the loud, flashy kind. The quiet, stubborn kind. <br>
- The kind that whispers, “I’ll try again tomorrow.” <br>
- That’s enough. <br>
-If you made it to the end.. <br>
-Maybe <br>
-Maybe it would be peaceful? <br>
-Right? <br>
-But what if it hurts more? <br>
-I mean you're leaving so much behind <br>
-So dont right? <br>
-But what i- <br>
-<br>
-<br>
-<br>
-Its up to you… <br>
-But remember- <br>
-<br>
-<br>
-<br>
-What if… <br>
-It worked? <br>
-What if… <br>
-It doesn't? <br>
-You'll never have that answer if you leave… <br>
-<br>
-<br>
-<br>
-<b>im right here</b>`;
+    const playButton = document.getElementById('playButton');
+    const textEl = document.getElementById('text');
+    const bgMusic = document.getElementById('bgMusic');
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
 
-    /*******************************
-     * Build DOM paragraphs from HTML
-     *******************************/
-    const textDiv = document.getElementById('textContent');
-    // Convert <br> sequences to paragraphs: split on double newlines or keep as single-sentence p's.
-    // We will split by '<br>' and group into paragraphs roughly every 1-3 lines.
-    (function populateText(){
-      // Split rawHTML by <br> tags:
-      const parts = rawHTML.split(/<br\s*\/?>/i).map(s => s.trim()).filter(s => s.length);
-      const frag = document.createDocumentFragment();
-      // Make paragraph for each line — this provides plenty of fade opportunities
-      for(let i=0;i<parts.length;i++){
-        const p = document.createElement('p');
-        // if this is the last element and contains "im right here" make it the final-line
-        if(/im right here/i.test(parts[i])){
-          p.innerHTML = '<span id="final-line">' + parts[i] + '</span>';
-        } else {
-          p.innerHTML = parts[i];
-        }
-        frag.appendChild(p);
-      }
-      textDiv.appendChild(frag);
-    })();
+    let particles = [];
+    let scrollY = 0;
+    let isAnimating = false;
 
-    /*******************************
-     * Elements
-     *******************************/
-    const playBtn = document.getElementById('playButton');
-    const audio = document.getElementById('bgAudio');
-    const textTrack = document.getElementById('textTrack');
-    const contentWrap = document.getElementById('contentWrap');
-    const paragraphs = Array.from(document.querySelectorAll('.text p'));
-    const finalLine = document.getElementById('final-line');
-    const pauseGlow = document.getElementById('pauseGlow');
-    const particleCanvas = document.getElementById('particle-canvas');
-    const ctx = particleCanvas.getContext('2d', { alpha: true });
-
-    /*******************************
-     * Responsive canvas size
-     *******************************/
-    function resizeCanvas(){
-      particleCanvas.width = innerWidth * devicePixelRatio;
-      particleCanvas.height = innerHeight * devicePixelRatio;
-      particleCanvas.style.width = innerWidth + 'px';
-      particleCanvas.style.height = innerHeight + 'px';
-      ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
     }
-    addEventListener('resize', resizeCanvas);
+    window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    /*******************************
-     * Particles
-     *******************************/
-    const particles = [];
-    const maxParticles = Math.round(Math.min(120, Math.max(40, (innerWidth*innerHeight)/80000)));
-    function spawnParticles(){
-      while(particles.length < maxParticles){
-        particles.push({
-          x: Math.random()*innerWidth,
-          y: innerHeight + Math.random()*200,
-          r: 0.6 + Math.random()*2.6,
-          vy: -0.2 - Math.random()*0.7,
-          life: 0,
-          ttl: 400 + Math.random()*800,
-          alpha: 0.03 + Math.random()*0.08,
-          drift: (Math.random()-0.5)*0.2
-        });
+    class Particle {
+      constructor() {
+        this.reset();
       }
-    }
-    function updateParticles(dt){
-      for(let i=particles.length-1;i>=0;i--){
-        const p = particles[i];
-        p.y += p.vy * dt * 0.06;
-        p.x += p.drift * dt * 0.02;
-        p.life += dt;
-        if(p.life > p.ttl || p.y < -50 || p.x < -50 || p.x > innerWidth+50){
-          particles.splice(i,1);
-        }
+      reset() {
+        this.x = Math.random() * canvas.width;
+        this.y = canvas.height + Math.random() * 50;
+        this.size = Math.random() * 2 + 0.5;
+        this.speed = Math.random() * 0.5 + 0.2;
+        this.alpha = Math.random() * 0.5 + 0.2;
       }
-    }
-    function drawParticles(){
-      ctx.clearRect(0,0,innerWidth,innerHeight);
-      for(const p of particles){
+      update() {
+        this.y -= this.speed;
+        if (this.y < -10) this.reset();
+      }
+      draw() {
+        ctx.fillStyle = `rgba(255,255,255,${this.alpha})`;
         ctx.beginPath();
-        ctx.fillStyle = `rgba(255,230,200, ${p.alpha})`;
-        ctx.ellipse(p.x, p.y, p.r, p.r*0.9, 0, 0, Math.PI*2);
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
         ctx.fill();
       }
     }
 
-    /*******************************
-     * Gradient emotion mapping
-     * We define color stops for different emotional sections
-     *******************************/
-    const colorStops = [
-      // [pos, [colorA, colorB]] pos in 0..1
-      [0.00, ['#071029','#2b3340']], // intro: deep navy -> gray
-      [0.20, ['#2b2140','#4b3750']], // moving into hurt
-      [0.38, ['#3b1f3a','#5a2c44']], // reflection (purple)
-      [0.60, ['#6b3750','#b77a53']], // soft gold / warming
-      [0.80, ['#ffb88c','#ffb196']], // hope tones
-      [1.00, ['#ff9f6b','#ffd6c2']]  // warm peach finishing
+    for (let i = 0; i < 80; i++) particles.push(new Particle());
+
+    function animateParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let p of particles) {
+        p.update();
+        p.draw();
+      }
+      requestAnimationFrame(animateParticles);
+    }
+
+    animateParticles();
+
+    const gradients = [
+      ["#0a0a1a", "#1a1a2e"],
+      ["#2c003e", "#240046"],
+      ["#3f37c9", "#560bad"],
+      ["#f48c06", "#faa307"],
+      ["#ffb5a7", "#fcd5ce"]
     ];
 
-    function lerp(a,b,t){ return a + (b-a)*t; }
+    function updateGradient(progress) {
+      const idx = Math.floor(progress * (gradients.length - 1));
+      const nextIdx = Math.min(idx + 1, gradients.length - 1);
+      const t = (progress * (gradients.length - 1)) % 1;
 
-    // helper to interpolate two hex colors
-    function hexToRgb(hex){
-      const c = hex.replace('#','');
-      return [parseInt(c.substring(0,2),16), parseInt(c.substring(2,4),16), parseInt(c.substring(4,6),16)];
-    }
-    function rgbToHex([r,g,b]){
-      const toHex = (n) => n.toString(16).padStart(2,'0');
-      return '#' + toHex(Math.round(r)) + toHex(Math.round(g)) + toHex(Math.round(b));
-    }
-    function mixColors(a,b,t){
-      const ra = hexToRgb(a), rb = hexToRgb(b);
-      return rgbToHex([lerp(ra[0],rb[0],t), lerp(ra[1],rb[1],t), lerp(ra[2],rb[2],t)]);
+      const lerp = (a, b) => a + (b - a) * t;
+      const parseHex = hex => [
+        parseInt(hex.slice(1, 3), 16),
+        parseInt(hex.slice(3, 5), 16),
+        parseInt(hex.slice(5, 7), 16)
+      ];
+
+      const c1 = parseHex(gradients[idx][0]);
+      const c2 = parseHex(gradients[nextIdx][0]);
+      const c3 = parseHex(gradients[idx][1]);
+      const c4 = parseHex(gradients[nextIdx][1]);
+
+      const mix = (cA, cB) =>
+        `rgb(${Math.round(lerp(cA[0], cB[0]))}, ${Math.round(lerp(cA[1], cB[1]))}, ${Math.round(lerp(cA[2], cB[2]))})`;
+
+      document.body.style.background = `linear-gradient(180deg, ${mix(c1, c2)}, ${mix(c3, c4)})`;
     }
 
-    function gradientForProgress(p){
-      p = Math.max(0, Math.min(1, p));
-      // find bracketing stops
-      let left = colorStops[0], right = colorStops[colorStops.length-1];
-      for(let i=0;i<colorStops.length-1;i++){
-        const a = colorStops[i], b = colorStops[i+1];
-        if(p >= a[0] && p <= b[0]){
-          left = a; right = b; break;
+    function startScroll() {
+      isAnimating = true;
+      bgMusic.play();
+      playButton.style.display = 'none';
+      textEl.style.opacity = 1;
+
+      const totalHeight = textEl.scrollHeight + window.innerHeight;
+      const scrollSpeed = 35; // Adjust pace here
+      scrollY = 0;
+
+      function scrollStep() {
+        if (!isAnimating) return;
+        scrollY += 0.3;
+        const progress = scrollY / (totalHeight - window.innerHeight);
+        updateGradient(progress);
+
+        textEl.style.bottom = `${scrollY}px`;
+
+        if (textEl.innerHTML.includes("<b>im right here</b>") && progress > 0.96) {
+          // Pause near the end
+          isAnimating = false;
+          return;
         }
+        if (progress < 1) requestAnimationFrame(scrollStep);
       }
-      const localT = (p - left[0]) / (right[0] - left[0] || 1);
-      const gA = mixColors(left[1][0], right[1][0], localT);
-      const gB = mixColors(left[1][1], right[1][1], localT);
-      return `linear-gradient(${getComputedStyle(document.documentElement).getPropertyValue('--bg-angle')}, ${gA}, ${gB})`;
+
+      scrollStep();
     }
 
-    /*******************************
-     * Text scrolling logic
-     *******************************/
-    let animState = {
-      running:false,
-      lastTime: null,
-      progress: 0, // 0 .. 1 as scroll fraction
-      duration: 120000, // will be set dynamically (ms)
-      startTime: null,
-      paused:false
-    };
-
-    // Compute reading-based duration
-    function estimateDuration(){
-      // count words by extracting text content
-      const plain = textDiv.innerText || textDiv.textContent || '';
-      // split on whitespace
-      const words = plain.trim().split(/\s+/).filter(Boolean);
-      const wordCount = words.length;
-      // reading speed 200 wpm = 200 words per minute
-      const wpm = 200;
-      const minutes = wordCount / wpm;
-      // base duration in ms:
-      let baseMs = Math.max(35000, Math.round(minutes * 60 * 1000));
-      // clamp to reasonable range
-      baseMs = Math.min(baseMs, 8 * 60 * 1000); // max 8 min
-      return baseMs;
-    }
-
-    // emotional slow ranges to slow down animation (array of [start,end,multiplier])
-    // these make the scroll linger through heavier paragraphs
-    const slowRanges = [
-      [0.06, 0.13, 0.45],
-      [0.33, 0.44, 0.6],
-      [0.62, 0.78, 0.55]
-    ];
-
-    // apply slow factor based on progress
-    function speedMultiplierAt(p){
-      for(const r of slowRanges){
-        if(p >= r[0] && p <= r[1]) return r[2];
-      }
-      return 1;
-    }
-
-    // compute total translate height needed
-    function computeScrollMetrics(){
-      const trackRect = textTrack.getBoundingClientRect();
-      const contentRect = contentWrap.getBoundingClientRect();
-      const textHeight = textTrack.scrollHeight;
-      const visibleHeight = contentRect.height;
-      const startY = visibleHeight + 60; // start just off bottom
-      const endY = -textHeight - 80; // end off top
-      const distance = startY - endY;
-      return { textHeight, visibleHeight, startY, endY, distance };
-    }
-
-    // update fade-in of paragraphs using viewport relative to contentWrap
-    function updateParagraphVisibility(){
-      const wrapRect = contentWrap.getBoundingClientRect();
-      paragraphs.forEach(p=>{
-        const rect = p.getBoundingClientRect();
-        // consider visible if top crosses bottom-third of wrap
-        const visibleThreshold = wrapRect.bottom - wrapRect.height * 0.18;
-        if(rect.top < wrapRect.bottom && rect.bottom > wrapRect.top && rect.top < visibleThreshold){
-          p.classList.add('visible');
-        } else {
-          // leave visible after it becomes visible for a natural feel (don't remove)
-          // but to support restarting we won't remove once shown.
-        }
-      });
-    }
-
-    // detect when final line is centered (and pause)
-    let finalPaused = false;
-    function checkFinalPause(trackY){
-      if(finalPaused) return;
-      if(!finalLine) return;
-      // compute global position of finalLine wrt viewport using trackY offset
-      // trackY is the current translateY applied to textTrack in px (negative upward).
-      const wrapRect = contentWrap.getBoundingClientRect();
-      const contentOffsetTop = textTrack.getBoundingClientRect().top - trackY; // approximate base
-      // simpler: compute finalLine bounding rect directly
-      const finalRect = finalLine.getBoundingClientRect();
-      const viewportCenter = innerHeight / 2;
-      // pause condition: final line center within 3% of viewport center
-      const finalCenter = finalRect.top + finalRect.height / 2;
-      const dist = Math.abs(finalCenter - viewportCenter);
-      if(dist < Math.max(12, innerHeight * 0.03)){
-        // pause the main animation
-        finalPaused = true;
-        animState.paused = true;
-        pauseGlow.classList.add('on');
-        finalLine.classList.add('paused');
-        // gently lower audio volume a bit
-        if(audio && !audio.paused){
-          audio.volume = Math.max(0.35, audio.volume * 0.72);
-        }
-      }
-    }
-
-    // main animation frame
-    function animateFrame(time){
-      if(!animState.running) return;
-      if(!animState.startTime) animState.startTime = time;
-      if(animState.paused){
-        animState.lastTime = time;
-        return;
-      }
-      const elapsed = time - animState.startTime;
-      // compute base progress linearly
-      let raw = elapsed / animState.duration;
-      raw = Math.min(1, raw);
-      // apply slow range mapping by integrating speedMultiplier — for simplicity, we'll remap raw using a "warp"
-      // Map raw -> real progress by sampling intermediate multipliers
-      const samples = 300;
-      let acc = 0, total = 0;
-      for(let i=0;i<samples;i++){
-        const t = i / (samples-1);
-        const s = speedMultiplierAt(t);
-        acc += (1 / s);
-        total++;
-      }
-      const avgFactor = acc / total;
-      // normalize: we want raw to reflect normalized time given slowdowns
-      // We'll build a simple easing that stretches ranges with slow multipliers
-      // Compute cumulative distribution function (CDF) on the fly for mapping raw->progress
-      // For performance, approximate: apply local multiplier at raw to get adjusted progress
-      const localMultiplier = speedMultiplierAt(raw) || 1;
-      let adj = raw * (1 / localMultiplier);
-      // Clamp and smooth
-      adj = Math.max(0, Math.min(1, adj));
-      animState.progress = adj;
-
-      // compute transform based on progress
-      const {startY,endY,distance} = computeScrollMetrics();
-      const currentY = startY + (endY - startY) * animState.progress; // note endY negative large
-      textTrack.style.transform = `translateY(${currentY}px)`;
-
-      // gradient update
-      const grad = gradientForProgress(animState.progress);
-      document.body.style.background = grad;
-
-      // update paragraphs visibility
-      updateParagraphVisibility();
-
-      // spawn/update/draw particles
-      spawnParticles();
-      const delta = animState.lastTime ? Math.min(60, time - animState.lastTime) : 16;
-      updateParticles(delta);
-      drawParticles();
-
-      // check final pause
-      checkFinalPause(currentY);
-
-      animState.lastTime = time;
-
-      // finish condition
-      if(animState.progress < 1 && !animState.paused){
-        requestAnimationFrame(animateFrame);
-      } else {
-        // natural finish: keep last frame static; fade particles slowly
-        animState.running = false;
-      }
-    }
-
-    /*******************************
-     * Start behavior after Play button
-     *******************************/
-    playBtn.addEventListener('click', async (e)=>{
-      // hide button
-      playBtn.classList.add('hidden');
-
-      try{
-        // play audio (user gesture)
-        await audio.play();
-        audio.volume = 0.95;
-      }catch(err){
-        // ignore — browser may block if audio missing; still start animation
-        console.warn('audio play blocked or failed', err);
-      }
-      // set duration based on reading speed & clamp
-      animState.duration = estimateDuration();
-      // gentle multiplier to make it feel cinematic
-      animState.duration = Math.max(38000, animState.duration * 1.05);
-
-      // begin animations
-      animState.running = true;
-      animState.startTime = null;
-      animState.lastTime = null;
-      finalPaused = false;
-      animState.paused = false;
-      pauseGlow.classList.remove('on');
-      finalLine && finalLine.classList.remove('paused');
-
-      // reveal first paragraphs immediately
-      paragraphs.slice(0,4).forEach(p => p.classList.add('visible'));
-
-      requestAnimationFrame(animateFrame);
-    });
-
-    /*******************************
-     * Accessibility: space toggles audio + pause if paused by user
-     *******************************/
-    document.addEventListener('keydown', (e)=>{
-      if(e.code === 'Space'){
-        e.preventDefault();
-        if(audio.paused){
-          audio.play().catch(()=>{});
-        } else {
-          audio.pause();
-        }
-      }
-    });
-
-    /*******************************
-     * When audio ends, stop animations softly
-     *******************************/
-    audio.addEventListener('ended', ()=>{
-      // slow to stop
-      animState.running = false;
-      pauseGlow.classList.add('on');
-    });
-
-    /*******************************
-     * Initialize visibility and tiny entrance
-     *******************************/
-    setTimeout(()=> {
-      paragraphs.slice(0,2).forEach(p => p.classList.add('visible'));
-      // slight breathing motion to hint at clicking
-      playBtn.animate([
-        { transform: 'translate(-50%,-50%) scale(1)' },
-        { transform: 'translate(-50%,-50%) scale(1.03)' },
-        { transform: 'translate(-50%,-50%) scale(1)' }
-      ], { duration: 2400, iterations: Infinity, easing: 'ease-in-out' });
-    }, 400);
-
-    // small tick for particles & idle motion before play
-    let idleLast = performance.now();
-    function idleTick(now){
-      const dt = now - idleLast;
-      idleLast = now;
-      spawnParticles();
-      updateParticles(dt);
-      drawParticles();
-      requestAnimationFrame(idleTick);
-    }
-    requestAnimationFrame(idleTick);
-
-    // ensure when user resizes we recompute visibility
-    addEventListener('resize', ()=> {
-      updateParagraphVisibility();
-      resizeCanvas();
-    });
-
-    // polite note for missing audio file
-    audio.addEventListener('error', (ev) => {
-      console.warn('Audio failed to load. Place music.mp3 in the same folder as this page to enable background music.');
-    });
-
-    // ensure final pause remains when user clicks near end - allow resume with click on body
-    document.body.addEventListener('click', (e)=>{
-      if(finalPaused){
-        // clicking anywhere resumes (if user wants)
-        finalPaused = false;
-        animState.paused = false;
-        pauseGlow.classList.remove('on');
-        finalLine.classList.remove('paused');
-        // restore audio volume
-        if(audio && !audio.paused) audio.volume = 0.95;
-        // continue animation from current progress
-        // treat startTime offset so we don't jump: set startTime relative to lastTime and current progress
-        animState.startTime = performance.now() - animState.progress * animState.duration;
-        requestAnimationFrame(animateFrame);
-      }
-    });
-
+    playButton.addEventListener('click', startScroll);
   </script>
 </body>
 </html>
