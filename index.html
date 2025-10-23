@@ -341,7 +341,7 @@ You'll never have that answer if you leave… <br>
       const text = textEl.textContent.trim();
 
       // Count words for reading speed
-      const WPS = 1; // 180 wpm
+      const WPS = 3; // 180 wpm
       const words = text.split(/\s+/).filter(Boolean).length;
       const minSecs = 10;
       const baseDuration = Math.max(words / WPS, minSecs);
