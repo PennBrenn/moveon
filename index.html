@@ -342,7 +342,7 @@ You'll never have that answer if you leave… <br>
       const textEl = document.getElementById('scrollText');
       const text = textEl.textContent.trim();
       const words = text.split(/\s+/).filter(Boolean).length;
-      const WPS = 1; // reading speed (words per second)
+      const WPS = 3; // reading speed (words per second)
       const minSecs = 10;
       const duration = Math.max(words / WPS, minSecs);
       textEl.style.setProperty('--duration', duration + 's');
