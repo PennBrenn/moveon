@@ -14,7 +14,7 @@
       color: #ffffff;
     }
 
-    /* Image background */
+    /* Background image */
     .stage {
       position: fixed;
       inset: 0;
@@ -33,7 +33,7 @@
       user-select: none;
     }
 
-    /* Scroll area */
+    /* Scrolling layer */
     .scroll-overlay {
       position: fixed;
       inset: 0;
@@ -44,7 +44,6 @@
       z-index: 10;
     }
 
-    /* Viewport for scroll */
     .viewport {
       position: relative;
       width: 70vw;
@@ -54,7 +53,6 @@
       -webkit-mask-image: linear-gradient(to top, transparent, white 15%, white 85%, transparent);
     }
 
-    /* Text */
     .scrolling-text {
       position: absolute;
       left: 50%;
@@ -64,16 +62,15 @@
       font-size: 2rem;
       line-height: 1.6;
       font-weight: 400;
-      animation: scrollUp var(--duration, 20s) linear infinite;
+      animation: scrollUp var(--duration, 30s) linear infinite;
       will-change: transform;
     }
 
     @keyframes scrollUp {
-      from { transform: translateX(-50%) translateY(100%); }
-      to { transform: translateX(-50%) translateY(-100%); }
+      from { transform: translateX(-50%) translateY(var(--start, 100%)); }
+      to   { transform: translateX(-50%) translateY(var(--end, -100%)); }
     }
 
-    /* Fade mask for top/bottom vanish/appear */
     .fade-overlay {
       position: absolute;
       inset: 0;
@@ -340,12 +337,28 @@ You'll never have that answer if you leave… <br>
   <script>
     (function() {
       const textEl = document.getElementById('scrollText');
+      const viewport = textEl.parentElement;
       const text = textEl.textContent.trim();
+
+      // Count words for reading speed
+      const WPS = 1; // 180 wpm
       const words = text.split(/\s+/).filter(Boolean).length;
-      const WPS = 3; // reading speed (words per second)
       const minSecs = 10;
-      const duration = Math.max(words / WPS, minSecs);
-      textEl.style.setProperty('--duration', duration + 's');
+      const baseDuration = Math.max(words / WPS, minSecs);
+
+      // Wait a moment for layout to measure height
+      requestAnimationFrame(() => {
+        const textHeight = textEl.scrollHeight;
+        const viewportHeight = viewport.clientHeight;
+
+        // total distance to scroll = text + viewport height
+        const distance = textHeight + viewportHeight;
+        const duration = baseDuration + textHeight / 100; // scale time for long text
+
+        textEl.style.setProperty('--start', viewportHeight + 'px');
+        textEl.style.setProperty('--end', -textHeight + 'px');
+        textEl.style.setProperty('--duration', duration + 's');
+      });
     })();
   </script>
 </body>
