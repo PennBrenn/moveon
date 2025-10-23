@@ -1,505 +1,159 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>move on.</title>
-  <meta name="description" content="Before you do it, read this, please?">
-  <link rel="icon" href="itsok.png" type="image/png">
-
+  <meta name="description" content="Before you do it, read this, please?" />
+  <link rel="icon" href="itsok.png" type="image/png" />
   <style>
-    :root {
-      --text-pad: 8vw;
-      --bg-transition: 8s;
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
 
     html, body {
       height: 100%;
-      margin: 0;
-      background: linear-gradient(180deg, #0f0c29, #302b63);
-      transition: background var(--bg-transition) ease;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-      color: #fff;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      overflow: hidden; /* page-level hidden; internal area allows scroll-like control */
-    }
-
-    /* viewport container */
-    #container {
-      position: relative;
-      height: 100vh;
-      width: 100%;
       overflow: hidden;
-    }
-
-    /* centered play button */
-    #playButton {
-      position: absolute;
-      z-index: 20;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(255,255,255,0.06);
-      border: 2px solid rgba(255,255,255,0.14);
-      color: #fff;
-      padding: 14px 28px;
-      border-radius: 999px;
-      font-size: 18px;
-      cursor: pointer;
-      backdrop-filter: blur(6px);
+      font-family: 'Georgia', serif;
+      color: white;
+      background: linear-gradient(-45deg, #2b1055, #7597de, #1b2735, #090a0f);
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
       display: flex;
-      gap: 10px;
-      align-items: center;
-      box-shadow: 0 6px 24px rgba(0,0,0,0.45);
-    }
-    #playButton:focus { outline: 3px solid rgba(255,255,255,0.12); }
-
-    /* text area — starts at top of viewport */
-    #viewport {
-      position: absolute;
-      inset: 0;
-      z-index: 5;
-      overflow: hidden; /* we'll move the inner content */
-      display: flex;
-      align-items: flex-start;
       justify-content: center;
-      padding-top: 6vh;
-      padding-bottom: 6vh;
+      align-items: center;
     }
 
-    #text {
-      width: 100%;
-      max-width: 900px;
-      box-sizing: border-box;
-      padding: 1rem var(--text-pad);
-      line-height: 1.75;
-      font-size: 1.05rem;
-      transform: translateY(0); /* starts at top */
-      will-change: transform;
-      color: #fff;
-      text-align: left;
-      user-select: text;
-      -webkit-user-select: text;
-      scrollbar-width: thin;
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
     }
 
-    /* subtle overscroll indicator (so user knows can scroll) */
-    #hint {
+    #text-container {
       position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      bottom: 18px;
-      z-index: 15;
-      font-size: 13px;
-      opacity: 0.7;
-      color: rgba(255,255,255,0.9);
-      pointer-events: none;
+      width: 80%;
+      max-width: 1000px;
+      text-align: center;
+      font-size: 2rem;
+      line-height: 2.8rem;
+      opacity: 0;
+      transition: opacity 2s ease;
+      top: 100%;
     }
 
-    /* canvas for particles */
-    canvas#particles {
+    #start-button {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 12px;
+      padding: 16px 40px;
+      color: white;
+      font-size: 1.3rem;
+      letter-spacing: 1px;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+      z-index: 10;
+    }
+
+    #start-button:hover {
+      background: rgba(255,255,255,0.2);
+      transform: scale(1.05);
+    }
+
+    canvas {
       position: fixed;
-      inset: 0;
+      top: 0;
+      left: 0;
       width: 100%;
       height: 100%;
-      z-index: 1;
+      z-index: -1;
       pointer-events: none;
-    }
-
-    /* smaller screens tweaks */
-    @media (max-width: 640px) {
-      #text { font-size: 1rem; line-height: 1.6; padding: 1rem 6vw; }
-      #playButton { font-size: 16px; padding: 12px 20px; }
     }
   </style>
 </head>
 <body>
-  <div id="container" role="main" aria-labelledby="title">
-    <canvas id="particles" aria-hidden="true"></canvas>
+  <canvas id="particles"></canvas>
 
-    <div id="viewport" aria-hidden="false">
-      <article id="text" tabindex="0" aria-label="Emotional letter">
-        <!-- Put the full text you provided here. Keep the <br> tags as you like. -->
-        So, you’re here. <br>
-        Well… if you found this, you’re probably stuck in a loop. <br>
-        You know, that weird space where you can’t move on, but you can’t go back either. <br>
-        You keep replaying things in your head, wondering what went wrong, what you could’ve done different. <br>
-        It’s exhausting, isn’t it? <br>
-        You need to move on, but you don’t know how. <br>
-        And that’s okay. <br>
-        Nobody really teaches you how to let go of something that once felt like everything. <br>
-        Btw, killing yourself solves nothing, so just—don’t even go there. <br>
-        I know it feels heavy, like everything’s falling apart, but that’s not the answer. <br>
-        You’re not broken beyond repair. <br>
-        Just breathe for a second, okay? <br>
-        You’ve gotta move on… right? <br>
-        Yeah, I know. Easier said than done. <br>
-        You can’t just wake up and be fine. <br>
-        It doesn’t work like that. <br>
-        You keep checking your phone, hoping maybe they’ll reach out. <br>
-        You see something that reminds you of them and it all floods back. <br>
-        It’s brutal. <br>
-        But you’re still here, and that means something. <br>
-        I know you can’t move on yet, but it’s alright. <br>
-        It’s hard. <br>
-        I mean, what else are you supposed to do? <br>
-        The thought of someone new feels wrong, almost scary. <br>
-        Like you’d be betraying what you had. <br>
-        And yeah, maybe they really felt like the one. <br>
-        You thought it was forever, right? <br>
-        But somewhere deep down, you knew it would end eventually. <br>
-        You just didn’t want to believe it. <br>
-        Stop blaming yourself. <br>
-        You didn’t ruin everything. <br>
-        Sometimes things fall apart even when you give them your all. <br>
-        Sometimes it’s not about what you did or didn’t do. <br>
-        Sometimes, it’s just life. <br>
-        You know they cared, right? <br>
-        They really did. <br>
-        But maybe it wasn’t meant to last forever. <br>
-        Maybe it was meant to teach you something, even if that lesson hurts right now. <br>
-        And what if it wasn’t either of your faults? <br>
-        What if it was just… timing? <br>
-        Or something out of your control? <br>
-        You need to understand—it had to end for a reason. <br>
-        Even if you don’t see that reason yet. <br>
-        One day, you’ll wake up and the weight will feel lighter. <br>
-        You’ll catch yourself laughing again, for real. <br>
-        You’ll stop checking if they’ve seen your stories. <br>
-        You’ll stop comparing everyone to them. <br>
-        And when that day comes, it won’t mean you forgot. <br>
-        It’ll just mean you healed. <br>
-        Until then, take it slow. <br>
-        Eat something, even if it’s small. <br>
-        Go outside, even if it’s just to breathe for a minute. <br>
-        Let the world remind you that there’s more waiting out there. <br>
-        Because there is. <br>
-        There’s more love. More joy. More peace. <br>
-        You just have to hang on long enough to find it. <br>
-        So yeah… maybe it ended. <br>
-        But you? <br>
-        You’re still here. <br>
-        And that means there’s still time to start again. <br>
-        Yeah… <br>
-        I loved them. <br>
-        I really did. <br>
-        And I thought they loved me too. <br>
-        You know that feeling — when everything just clicks, and you start building your whole world around someone? <br>
-        You start planning futures in your head, making promises you thought you’d actually keep. <br>
-        You start believing that maybe, just maybe, you finally found peace. <br>
-        But then it’s gone. <br>
-        Not even all at once — just piece by piece. <br>
-        Slowly, like sand slipping through your fingers. <br>
-        You try to hold on tighter, but the tighter you grip, the faster it fades. <br>
-        And suddenly, you’re left there staring at the ceiling at 2 a.m., wondering what the hell happened. <br>
-        It hurts because it was real. <br>
-        Don’t let anyone tell you it wasn’t. <br>
-        What you felt was real. What you gave was real. <br>
-        Even if it didn’t last forever, it mattered. <br>
-        And that’s what makes it so hard to let go — because it wasn’t fake, it just… ended. <br>
-        You replay their laugh, their voice, the small things they did without even realizing how much they meant to you. <br>
-        The way they looked at you when you weren’t even trying. <br>
-        The inside jokes no one else would get. <br>
-        That one memory that hits you so hard it physically hurts to think about. <br>
-        Yeah. That one. <br>
-        And the worst part? <br>
-        They probably think you’re okay. <br>
-        They probably don’t even know how much you miss them. <br>
-        How much space they still take up in your head. <br>
-        You tell yourself you’re fine, that you’re healing, but deep down you still check for them in every crowd, every dream, every silence. <br>
-        I get it. <br>
-        It’s not easy to accept that something so right could end so wrong. <br>
-        It’s not easy to stop loving someone who once made you feel alive. <br>
-        But you have to. <br>
-        Not because you stopped caring — but because you finally started caring about yourself again. <br>
-        You deserve peace. <br>
-        You deserve someone who doesn’t make you question your worth. <br>
-        You deserve someone who stays. <br>
-        But before all that, you deserve you. <br>
-        You’ve spent so long giving pieces of yourself away just to feel wanted. <br>
-        It’s time to start giving them back to yourself. <br>
-        Piece by piece. Day by day. <br>
-        It won’t happen overnight. <br>
-        Some days you’ll feel fine, and then out of nowhere you’ll fall apart again. <br>
-        That’s okay. That’s healing. <br>
-        It’s not linear, it’s messy and unfair, but it’s real. <br>
-        And maybe one day, you’ll look back and realize it all led you somewhere better. <br>
-        Maybe not “better” in the perfect sense, but in the way that feels lighter, freer. <br>
-        Because you’ll know that no matter what happened, you made it through. <br>
-        You loved deeply. <br>
-        You gave honestly. <br>
-        You cared with everything you had. <br>
-        And even if it didn’t last — that doesn’t make you weak. <br>
-        It makes you human. <br>
-        So yeah… you loved them. <br>
-        And they probably loved you too, in their own way. <br>
-        But sometimes love isn’t enough to make people stay. <br>
-        And that’s the hardest truth to live with. <br>
-        Still — you’re here. <br>
-        You’re breathing. <br>
-        You’re trying. <br>
-        And that means there’s still hope. <br>
-        You know what? Healing doesn’t look like sunlight and smiles right away. <br>
-        It starts small — like eating something even though you don’t feel like it. <br>
-        Like taking a shower, or opening the window just to feel fresh air for a second. <br>
-        It’s not dramatic; it’s quiet, it’s gentle, it’s you trying. <br>
-        You don’t have to be happy to keep going. <br>
-        You just have to stay curious. <br>
-        Like — what if things can change? What if there’s more than this pain? <br>
-        That little “what if” is hope. <br>
-        It’s fragile, but it’s powerful. <br>
-        There will be mornings where it still hurts. <br>
-        You’ll wake up and the ache will still be there, and that’s okay. <br>
-        It doesn’t mean you’ve failed. It just means you’re still healing. <br>
-        Then one day, it hits softer. <br>
-        You’ll hear a song that used to make you cry, and instead of breaking, you’ll just… breathe. <br>
-        You’ll look around and realize that you didn’t think about them for a few hours. <br>
-        That’s progress. That’s something. <br>
-        The world slowly starts to rebuild around you. <br>
-        Not like it was before — it’s different, quieter maybe, but real. <br>
-        You find comfort in little things again. The way coffee smells. The sound of rain. A random laugh that surprises you. <br>
-        That’s life trying to remind you — you’re still part of it. <br>
-        And when you finally start to see it, when you realize you can exist without constant pain — you’ll feel proud. <br>
-        Because you’ll know how far you’ve come. <br>
-        You didn’t give up when it would’ve been easier to. <br>
-        You stayed. <br>
-        And staying? That’s strength. <br>
-        Not the loud, flashy kind. The quiet, stubborn kind. <br>
-        The kind that whispers, “I’ll try again tomorrow.” <br>
-        That’s enough. <br>
-        If you made it to the end.. <br>
-        Maybe <br>
-        Maybe it would be peaceful? <br>
-        Right? <br>
-        But what if it hurts more? <br>
-        I mean you're leaving so much behind <br>
-        So dont right? <br>
-        But what i- <br>
-        <br><br><br>
-        Its up to you… <br>
-        But remember- <br>
-        <br><br><br>
-        What if… <br>
-        It worked? <br>
-        What if… <br>
-        It doesn't? <br>
-        You'll never have that answer if you leave… <br>
-        <br><br><br>
-        <b>im right here</b>
-      </article>
-    </div>
+  <button id="start-button">Play</button>
 
-    <div id="hint">Click Play to begin • You can also scroll manually</div>
-
-    <button id="playButton" aria-pressed="false" aria-label="Play and start animation">
-      <span id="playIcon">▶</span>
-      <span>Play</span>
-    </button>
+  <div id="text-container">
+    So, you’re here. <br>
+    Well… if you found this, you’re probably stuck in a loop. <br>
+    You know, that weird space where you can’t move on, but you can’t go back either. <br>
+    You keep replaying things in your head, wondering what went wrong, what you could’ve done different. <br>
+    It’s exhausting, isn’t it? <br>
+    ...
+    <br><br><b>im right here</b>
   </div>
 
-  <!-- background audio file (local) -->
-  <audio id="bgMusic" loop preload="auto">
-    <source src="music.mp3" type="audio/mpeg">
-    <!-- fallback text -->
-  </audio>
+  <audio id="bg-music" src="music.mp3" preload="auto"></audio>
 
   <script>
-    // Start on top of the page (in case of prior scroll)
-    window.scrollTo(0, 0);
+    const button = document.getElementById('start-button');
+    const text = document.getElementById('text-container');
+    const music = document.getElementById('bg-music');
 
-    const playButton = document.getElementById('playButton');
-    const playIcon = document.getElementById('playIcon');
-    const bg = document.body;
-    const music = document.getElementById('bgMusic');
-    const textEl = document.getElementById('text');
-    const viewport = document.getElementById('viewport');
-    const hint = document.getElementById('hint');
+    button.addEventListener('click', () => {
+      button.style.display = 'none';
+      text.style.opacity = 1;
+      music.play();
 
-    // layout & scroll control
-    let animationRunning = false;
-    // current translateY of the text (px). Start at 0 so text starts at top of viewport.
-    let y = 0;
-    let lastTime = null;
-    // reading pace px/sec (approx). Adjust as needed.
-    const baseSpeed = 30; // px per second (feel free to tune for your content length)
+      let scrollSpeed = 0.1; // slower scroll speed
+      let position = window.innerHeight;
+      const totalHeight = text.scrollHeight + window.innerHeight;
 
-    // limit how far we scroll (so content scrolls until it's fully past the top)
-    function maxScroll() {
-      // positive number of pixels we can move upward (as positive value)
-      const contentHeight = textEl.scrollHeight;
-      const vpHeight = viewport.clientHeight;
-      return Math.max(0, contentHeight - vpHeight + 80); // small buffer
-    }
-
-    // animate using rAF for smoothness
-    function step(ts) {
-      if (!lastTime) lastTime = ts;
-      const dt = (ts - lastTime) / 1000; // seconds
-      lastTime = ts;
-
-      if (animationRunning) {
-        // adaptive speed: slower when user is near end or when text is long — keep it readable
-        const speed = baseSpeed;
-        y -= speed * dt;
-        // clamp y so it doesn't scroll past the end
-        const limit = maxScroll();
-        if (-y > limit) {
-          y = -limit;
-          // stop animation when fully scrolled
-          animationRunning = false;
-          playButton.style.display = 'flex';
-          playIcon.textContent = '⟳';
-          playButton.querySelector('span:nth-child(2)').textContent = 'Replay';
+      const animate = () => {
+        position -= scrollSpeed;
+        text.style.top = position + 'px';
+        if (Math.abs(position) < totalHeight) {
+          requestAnimationFrame(animate);
         }
-        textEl.style.transform = `translateY(${y}px)`;
-      }
-
-      requestAnimationFrame(step);
-    }
-
-    requestAnimationFrame(step);
-
-    // allow wheel/touch to influence y (manual control)
-    let isTouching = false;
-    let lastTouchY = 0;
-
-    // Wheel
-    window.addEventListener('wheel', (e) => {
-      // when user scrolls, pause the automatic animation briefly
-      // apply a delta to y (positive deltaY => scroll down visually -> move text down => y increases)
-      y += e.deltaY * 0.8;
-      // clamp
-      if (y > 0) y = 0;
-      if (-y > maxScroll()) y = -maxScroll();
-      textEl.style.transform = `translateY(${y}px)`;
-    }, { passive: true });
-
-    // Touch
-    window.addEventListener('touchstart', (e) => {
-      isTouching = true;
-      lastTouchY = e.touches[0].clientY;
-    }, { passive: true });
-    window.addEventListener('touchmove', (e) => {
-      if (!isTouching) return;
-      const ty = e.touches[0].clientY;
-      const dy = ty - lastTouchY;
-      lastTouchY = ty;
-      y += dy;
-      if (y > 0) y = 0;
-      if (-y > maxScroll()) y = -maxScroll();
-      textEl.style.transform = `translateY(${y}px)`;
-    }, { passive: true });
-    window.addEventListener('touchend', () => { isTouching = false; });
-
-    // Play button behavior: starts music and animation
-    playButton.addEventListener('click', async () => {
-      // start audio
-      try {
-        await music.play();
-      } catch (err) {
-        // autoplay may be blocked; user clicked so it should work, but if not, ignore.
-        console.warn('Audio play prevented:', err);
-      }
-      // start animation
-      animationRunning = true;
-      lastTime = null;
-      playButton.style.display = 'none';
-      hint.style.opacity = '0';
+      };
+      animate();
     });
 
-    // optional: keyboard accessibility - space to start/stop when pressed while focused on button
-    playButton.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        playButton.click();
-      }
-    });
+    // Disable user scroll input completely
+    window.addEventListener('wheel', (e) => e.preventDefault(), { passive: false });
+    window.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
 
-    // change background gradient slowly — optional simple emotional shifts
-    const gradients = [
-      'linear-gradient(180deg,#0f0c29,#302b63)',
-      'linear-gradient(180deg,#000428,#004e92)',
-      'linear-gradient(180deg,#42275a,#734b6d)',
-      'linear-gradient(180deg,#141E30,#243B55)',
-      'linear-gradient(180deg,#3a6186,#89253e)',
-      'linear-gradient(180deg,#485563,#29323c)',
-      'linear-gradient(180deg,#0f2027,#203a43,#2c5364)'
-    ];
-    let gi = 0;
-    function shiftBg() {
-      gi = (gi + 1) % gradients.length;
-      document.body.style.transition = 'background 10s ease';
-      document.body.style.background = gradients[gi];
-    }
-    // slowly shift every 12 seconds once animation is running
-    let bgInterval = null;
-    const startBgInterval = () => {
-      if (bgInterval) return;
-      bgInterval = setInterval(shiftBg, 12000);
-    };
-    // start bg shifts when user starts playing
-    playButton.addEventListener('click', startBgInterval);
-
-    // PARTICLES (lightweight)
+    // Particle effect
     const canvas = document.getElementById('particles');
     const ctx = canvas.getContext('2d');
+    let particles = [];
+
     function resizeCanvas() {
-      canvas.width = innerWidth;
-      canvas.height = innerHeight;
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
     }
+
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    const particles = [];
-    const PARTICLE_COUNT = Math.max(60, Math.floor((innerWidth * innerHeight) / 9000)); // adapt to screen
-
-    function initParticles() {
-      particles.length = 0;
-      for (let i = 0; i < PARTICLE_COUNT; i++) {
-        particles.push({
-          x: Math.random() * canvas.width,
-          y: Math.random() * canvas.height,
-          r: Math.random() * 1.8 + 0.4,
-          vx: (Math.random() - 0.5) * 0.2,
-          vy: (Math.random() - 0.5) * 0.2,
-          a: Math.random() * 0.9 + 0.05
-        });
-      }
+    for (let i = 0; i < 120; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        size: Math.random() * 2,
+        speedY: Math.random() * 0.4 + 0.1
+      });
     }
-    initParticles();
 
     function drawParticles() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
       for (let p of particles) {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.a += (Math.random() - 0.5) * 0.02;
-        if (p.a < 0.05) p.a = 0.05;
-        if (p.a > 1) p.a = 1;
-        if (p.x < -10) p.x = canvas.width + 10;
-        if (p.x > canvas.width + 10) p.x = -10;
-        if (p.y < -10) p.y = canvas.height + 10;
-        if (p.y > canvas.height + 10) p.y = -10;
-
         ctx.beginPath();
-        ctx.globalAlpha = p.a * 0.85;
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255,255,255,1)';
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fill();
+        p.y += p.speedY;
+        if (p.y > canvas.height) p.y = 0;
       }
-      ctx.globalAlpha = 1;
       requestAnimationFrame(drawParticles);
     }
-    requestAnimationFrame(drawParticles);
-
-    // small UX: if user focuses the text with keyboard, show hint
-    textEl.addEventListener('focus', () => { hint.style.opacity = '0'; });
-
-    // ensure transforms applied initially
-    textEl.style.transform = `translateY(${y}px)`;
-
-    // if user reloads and audio permission causes issues, they can click Play again (replay UI shown)
+    drawParticles();
   </script>
 </body>
 </html>
