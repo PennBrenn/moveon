@@ -3,120 +3,92 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>move on.</title>
-  <meta name="description" content="bro move on allready, what are you expecting to happen?">
+  <title>Move On — Cinematic Scroll</title>
   <style>
-    :root {
-      --bg: #000000;
-      --text-color: #ffffff;
-      --font: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      --min-duration: 8s; /* minimum scroll time */
-    }
-
     html, body {
       height: 100%;
       margin: 0;
-      background: var(--bg);
+      background: #000000;
       overflow: hidden;
-      font-family: var(--font);
+      font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #ffffff;
     }
 
-    /* Fullscreen centered image (no stretching) */
+    /* Image background */
     .stage {
       position: fixed;
       inset: 0;
       display: flex;
-      align-items: center;
       justify-content: center;
-      background: var(--bg);
+      align-items: center;
+      background: #000000;
+      z-index: 0;
     }
     .stage img {
       max-width: 100%;
       max-height: 100%;
-      object-fit: contain; /* preserve aspect, no stretch */
+      object-fit: contain;
       display: block;
-      user-select: none;
       pointer-events: none;
+      user-select: none;
     }
 
-    /* Scrolling text container — full screen overlay */
+    /* Scroll area */
     .scroll-overlay {
       position: fixed;
       inset: 0;
-      pointer-events: auto; /* allow hover to pause */
       display: flex;
-      align-items: flex-end; /* start from bottom */
       justify-content: center;
+      align-items: flex-end;
+      pointer-events: none;
       z-index: 10;
-      background: transparent;
     }
 
-    /* The visual area where text will move upward */
+    /* Viewport for scroll */
     .viewport {
-      width: min(85vw, 1200px); /* constrain width */
-      height: 60vh; /* visible vertical area (change if you like) */
-      display: block;
       position: relative;
+      width: 70vw;
+      height: 70vh;
       overflow: hidden;
-      padding: 1.25rem;
-      box-sizing: border-box;
-      pointer-events: auto;
-      /* subtle backdrop so text is readable on busy images */
-      background: linear-gradient(180deg, rgba(0,0,0,0.0), rgba(0,0,0,0.45));
-      border-radius: 6px;
+      mask-image: linear-gradient(to top, transparent, white 15%, white 85%, transparent);
+      -webkit-mask-image: linear-gradient(to top, transparent, white 15%, white 85%, transparent);
     }
 
+    /* Text */
     .scrolling-text {
       position: absolute;
       left: 50%;
       transform: translateX(-50%) translateY(var(--start, 100%));
-      white-space: normal;
-      width: calc(100% - 2rem);
-      color: var(--text-color);
-      font-size: 1.05rem;
-      line-height: 1.5;
-      text-align: left;
-      -webkit-font-smoothing: antialiased;
-      /* animation is configured by JS to set duration and CSS variable --end */
-      animation-name: scrollUp;
-      animation-timing-function: linear;
-      animation-iteration-count: infinite;
-      animation-duration: var(--duration, 12s);
+      width: 100%;
+      text-align: center;
+      font-size: 2rem;
+      line-height: 1.6;
+      font-weight: 400;
+      animation: scrollUp var(--duration, 20s) linear infinite;
       will-change: transform;
     }
 
-    /* pause on hover */
-    .viewport:hover .scrolling-text,
-    .scrolling-text:hover {
-      animation-play-state: paused;
-      cursor: default;
-    }
-
     @keyframes scrollUp {
-      from {
-        transform: translateX(-50%) translateY(var(--start, 100%));
-      }
-      to {
-        transform: translateX(-50%) translateY(var(--end, -100%));
-      }
+      from { transform: translateX(-50%) translateY(100%); }
+      to { transform: translateX(-50%) translateY(-100%); }
     }
 
-    /* small hint */
-    .hint {
+    /* Fade mask for top/bottom vanish/appear */
+    .fade-overlay {
       position: absolute;
-      right: 8px;
-      bottom: 8px;
-      font-size: 0.8rem;
-      color: rgba(255,255,255,0.7);
-      backdrop-filter: blur(3px);
-      padding: 4px 8px;
-      border-radius: 6px;
+      inset: 0;
+      background: linear-gradient(to top,
+        rgba(0,0,0,1) 0%,
+        rgba(0,0,0,0) 20%,
+        rgba(0,0,0,0) 80%,
+        rgba(0,0,0,1) 100%);
       pointer-events: none;
+      z-index: 20;
     }
 
     @media (max-width: 600px) {
-      .viewport { height: 45vh; width: 94vw; padding: 0.75rem; }
-      .scrolling-text { font-size: 0.95rem; }
+      .viewport { width: 90vw; height: 60vh; }
+      .scrolling-text { font-size: 1.4rem; }
     }
   </style>
 </head>
@@ -125,75 +97,31 @@
     <img src="moveon.png" alt="Move On">
   </div>
 
-  <div class="scroll-overlay" aria-hidden="false">
-    <div class="viewport" role="region" aria-label="Scrolling text (hover to pause)">
+  <div class="scroll-overlay">
+    <div class="viewport">
       <div class="scrolling-text" id="scrollText">
-        <!-- Replace the text below with whatever you want to scroll -->
-        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer non tortor sed lorem tincidunt
-        pharetra. Vivamus luctus, nulla quis gravida pharetra, orci lorem tincidunt nisl, id vulputate
-        magna augue id justo. Sed euismod, nibh non gravida faucibus, urna nibh fermentum lorem, a
-        vulputate lorem lacus vitae urna. Proin lacinia, sapien id volutpat volutpat, orci dui gravida
-        quam, at interdum lorem elit non neque. Cras ut neque sed augue facilisis facilisis. Suspendisse
-        potenti. Donec placerat, nisl a tincidunt rhoncus, justo arcu volutpat erat, vitae pretium
-        risus augue non magna. Integer elementum, nisl non dapibus tristique, nunc mauris hendrerit
-        dolor, id tincidunt nibh sapien id dui. Nulla facilisi. Curabitur sed lacus ut enim luctus
-        vulputate. Duis ultricies, ipsum vitae luctus lacinia, arcu justo faucibus nibh, ut ultrices
-        mi neque ac est.
+        Move on.<br>
+        Leave it behind.<br>
+        The past fades away.<br>
+        Only forward lies the light.<br>
+        Keep going.<br>
+        Always forward.<br>
+        Always onward.<br>
+        Move on.
       </div>
-      <div class="hint">Hover to pause</div>
+      <div class="fade-overlay"></div>
     </div>
   </div>
 
   <script>
-    (function () {
+    (function() {
       const textEl = document.getElementById('scrollText');
-      const viewport = textEl.parentElement;
       const text = textEl.textContent.trim();
-
-      // reading speed: words per second (wps). 180 wpm ≈ 3 wps.
-      const WPS = 3;
-
-      // compute word count
-      const wordCount = text.length ? text.split(/\s+/).filter(Boolean).length : 0;
-
-      // compute duration (seconds) to allow reading at chosen pace
-      const readSecs = wordCount / WPS; // seconds to read whole text at WPS
-      const minSecs = 8; // sensible minimum
-      const durationSecs = Math.max(readSecs, minSecs);
-
-      // compute pixel distance to travel: start below viewport (100%) to fully above text height
-      // distance = viewport height + text height + small margin
-      // need actual heights in px
-      // give the browser one animation frame to layout
-      requestAnimationFrame(() => {
-        const vpRect = viewport.getBoundingClientRect();
-        const textRect = textEl.getBoundingClientRect();
-
-        const distancePx = Math.ceil(vpRect.height + textRect.height + 20); // px to travel
-        // set CSS variables for keyframes and duration
-        textEl.style.setProperty('--start', '100%');
-        textEl.style.setProperty('--end', `-${distancePx}px`);
-        textEl.style.setProperty('--duration', durationSecs + 's');
-      });
-
-      // Optional: if content changes, recompute (MutationObserver)
-      const mo = new MutationObserver(() => {
-        requestAnimationFrame(() => {
-          const vpRect = viewport.getBoundingClientRect();
-          const textRect = textEl.getBoundingClientRect();
-          const distancePx = Math.ceil(vpRect.height + textRect.height + 20);
-          const updatedWordCount = textEl.textContent.trim().split(/\s+/).filter(Boolean).length;
-          const updatedReadSecs = Math.max(updatedWordCount / WPS, minSecs);
-          textEl.style.setProperty('--end', `-${distancePx}px`);
-          textEl.style.setProperty('--duration', updatedReadSecs + 's');
-        });
-      });
-      mo.observe(textEl, { childList: true, subtree: true, characterData: true });
-
-      // Accessibility: pause animation if reduced motion is requested
-      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        textEl.style.animationPlayState = 'paused';
-      }
+      const words = text.split(/\s+/).filter(Boolean).length;
+      const WPS = 3; // reading speed (words per second)
+      const minSecs = 10;
+      const duration = Math.max(words / WPS, minSecs);
+      textEl.style.setProperty('--duration', duration + 's');
     })();
   </script>
 </body>
